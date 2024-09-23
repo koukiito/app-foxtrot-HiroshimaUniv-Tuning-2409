@@ -109,11 +109,7 @@ impl Graph {
         i32::MAX // パスが見つからない場合
     }
 
-    pub fn nearest_node(
-        &self,
-        from_node_id: i32,
-        to_node_ids: Vec<i32>,
-    ) -> Result<(i32, i32), io::Error> {
+    pub fn nearest_node(&self, from_node_id: i32, to_node_ids: Vec<i32>) -> Result<i32, io::Error> {
         // dijkstra法
         let mut dist: HashMap<i32, i32> = self.nodes.keys().map(|&k| (k, i32::MAX)).collect();
         let mut heap = BinaryHeap::new();
@@ -126,7 +122,7 @@ impl Graph {
 
         while let Some(State { cost, node }) = heap.pop() {
             if to_node_ids.contains(&node) {
-                return Ok((node, cost));
+                return Ok(node);
             }
 
             if cost > *dist.get(&node).unwrap_or(&i32::MAX) {

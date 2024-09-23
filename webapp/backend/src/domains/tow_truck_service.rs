@@ -113,13 +113,12 @@ impl<
         //     tow_trucks_with_distance
         // };
 
-        //TODO: distance is not nessesary.
         let shortest_result = graph.nearest_node(
             order.node_id,
             tow_trucks.iter().map(|truck| truck.node_id).collect(),
         );
         match shortest_result {
-            Ok((node_id, distance)) => {
+            Ok(node_id) => {
                 let tow_truck = tow_trucks
                     .iter()
                     .find(|truck| truck.node_id == node_id)
