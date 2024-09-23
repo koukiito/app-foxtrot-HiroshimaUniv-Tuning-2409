@@ -100,11 +100,11 @@ impl<
             graph.add_edge(edge);
         }
 
-        let shortest_result = graph.nearest_node(
+        let nearest_result = graph.nearest_node(
             order.node_id,
             tow_trucks.iter().map(|truck| truck.node_id).collect(),
         );
-        match shortest_result {
+        match nearest_result {
             Ok(node_id) => {
                 let tow_truck = tow_trucks
                     .iter()
