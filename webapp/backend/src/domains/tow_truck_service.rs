@@ -4,6 +4,7 @@ use super::order_service::OrderRepository;
 use crate::errors::AppError;
 use crate::models::graph::Graph;
 use crate::models::tow_truck::TowTruck;
+use std::collections::HashMap;
 
 pub trait TowTruckRepository {
     async fn get_paginated_tow_trucks(
@@ -100,17 +101,29 @@ impl<
             graph.add_edge(edge);
         }
 
-        let nearest_result = graph.nearest_node(
-            order.node_id,
-            tow_trucks.iter().map(|truck| truck.node_id).collect(),
-        );
+        // tow_trucksをHashMapに変換 (node_idをキーとし、IDが小さい方だけを残す)
+        let mut tow_truck_map: HashMap<i32, TowTruck> = HashMap::new();
+        for truck in tow_trucks {
+            tow_truck_map
+                .entry(truck.node_id)
+                .and_modify(|existing_truck| {
+                    if truck.id < existing_truck.id {
+                        *existing_truck = truck.clone();
+                    }
+                })
+                .or_insert(truck);
+        }
+
+        let nearest_result =
+            graph.nearest_node(order.node_id, tow_truck_map.keys().cloned().collect());
+
         match nearest_result {
-            Ok(node_id) => {
-                let tow_truck = tow_trucks
-                    .iter()
-                    .find(|truck| truck.node_id == node_id)
-                    .unwrap();
-                return Ok(Some(TowTruckDto::from_entity(tow_truck.clone())));
+            Ok(nearest_node_id) => {
+                if let Some(tow_truck) = tow_truck_map.get(&nearest_node_id) {
+                    return Ok(Some(TowTruckDto::from_entity(tow_truck.clone())));
+                } else {
+                    return Ok(None);
+                }
             }
             Err(_) => {
                 return Ok(None);
