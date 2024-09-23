@@ -43,7 +43,6 @@ CREATE TABLE IF NOT EXISTS nodes (
 CREATE TABLE IF NOT EXISTS edges (
     id INT AUTO_INCREMENT PRIMARY KEY,
     node_a_id INT NOT NULL,
-    node_a_area_id INT,
     node_b_id INT NOT NULL,
     weight INT NOT NULL,
     UNIQUE (node_a_id, node_b_id)
