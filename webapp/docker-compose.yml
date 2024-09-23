@@ -78,6 +78,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/access.log:/var/log/nginx/access.log
       - /da/tls:/da/tls:ro
+      - ./frontend/public:/home/frontend/public
     networks:
       - webapp-network
     depends_on:
