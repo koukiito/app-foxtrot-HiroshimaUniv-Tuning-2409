@@ -2,6 +2,8 @@ use sqlx::FromRow;
 use std::collections::{BinaryHeap, HashMap};
 use std::cmp::Ordering;
 
+use std::io;
+
 #[derive(FromRow, Clone, Debug)]
 pub struct Node {
     pub id: i32,
@@ -102,5 +104,40 @@ impl Graph {
         }
 
         i32::MAX  // パスが見つからない場合
+    }
+
+    pub fn shortest_node(&self, from_node_id: i32, to_node_ids: Vec<i32>) -> Result<(i32, i32), io::Error> {
+        // dijkstra法
+        let mut dist: HashMap<i32, i32> = self.nodes.keys().map(|&k| (k, i32::MAX)).collect();
+        let mut heap = BinaryHeap::new();
+
+        dist.insert(from_node_id, 0);
+        heap.push(State { cost: 0, node: from_node_id });
+
+        while let Some(State { cost, node }) = heap.pop() {
+            if to_node_ids.contains(&node) {
+                return Ok((node, cost));
+            }
+
+            if cost > *dist.get(&node).unwrap_or(&i32::MAX) {
+                continue;
+            }
+
+            if let Some(edges) = self.edges.get(&node) {
+                for edge in edges {
+                    let next = State {
+                        cost: cost.saturating_add(edge.weight),
+                        node: edge.node_b_id,
+                    };
+
+                    if next.cost < *dist.get(&next.node).unwrap_or(&i32::MAX) {
+                        heap.push(next);
+                        dist.insert(next.node, next.cost);
+                    }
+                }
+            }
+        }
+
+        Err(io::Error::new(io::ErrorKind::NotFound, "No path found"))
     }
 }
