@@ -114,18 +114,22 @@ impl<
         // };
 
         //TODO: distance is not nessesary.
-        let shortest_result = graph.shortest_node(order.node_id, tow_trucks.iter().map(|truck| truck.node_id).collect());
+        let shortest_result = graph.nearest_node(
+            order.node_id,
+            tow_trucks.iter().map(|truck| truck.node_id).collect(),
+        );
         match shortest_result {
             Ok((node_id, distance)) => {
-                let tow_truck = tow_trucks.iter().find(|truck| truck.node_id == node_id).unwrap();
+                let tow_truck = tow_trucks
+                    .iter()
+                    .find(|truck| truck.node_id == node_id)
+                    .unwrap();
                 return Ok(Some(TowTruckDto::from_entity(tow_truck.clone())));
             }
             Err(_) => {
                 return Ok(None);
             }
-            
         }
-
 
         // if sorted_tow_trucks_by_distance.is_empty() || sorted_tow_trucks_by_distance[0].0 > 10000000
         // {
