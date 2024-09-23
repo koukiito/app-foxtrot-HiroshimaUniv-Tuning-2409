@@ -71,6 +71,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx/nginx.local.conf:/etc/nginx/nginx.conf
+      - ./nginx/access.log:/var/log/nginx/access.log
     networks:
       - webapp-network
     depends_on:

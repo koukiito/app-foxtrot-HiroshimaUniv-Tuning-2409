@@ -1,3 +1,4 @@
+use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -9,6 +10,9 @@ use crate::models::user::{Dispatcher, Session, User};
 use crate::utils::{generate_session_token, hash_password, verify_password};
 
 use super::dto::auth::LoginResponseDto;
+
+use image::imageops::FilterType;
+use image::ImageOutputFormat;
 
 pub trait AuthRepository {
     async fn create_user(&self, username: &str, password: &str, role: &str)
@@ -171,27 +175,60 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
         let path: PathBuf =
             Path::new(&format!("images/user_profile/{}", profile_image_name)).to_path_buf();
 
-        let output = Command::new("convert")
-            .arg(&path)
-            .arg("-resize")
-            .arg(format!("{}x{}!", width, height))
-            .arg("png:-")
-            .output()
+        // let output = Command::new("convert")
+        //     .arg(&path)
+        //     .arg("-resize")
+        //     .arg(format!("{}x{}!", width, height))
+        //     .arg("png:-")
+        //     .output()
+        //     .map_err(|e| {
+        //         error!("画像リサイズのコマンド実行に失敗しました: {:?}", e);
+        //         AppError::InternalServerError
+        //     })?;
+
+        let width_u32 = width as u32;
+        let height_u32 = height as u32;
+
+        // let output = image::open(&path)
+        //     .map_err(|e| {
+        //         error!("画像ファイルの読み込みに失敗しました: {:?}", e);
+        //         AppError::InternalServerError
+        //     })?
+        //     .resize(width_u32, height_u32, FilterType::Lanczos3)
+        //     .into_bytes();
+
+        let base_image = image::open(&path)
             .map_err(|e| {
-                error!("画像リサイズのコマンド実行に失敗しました: {:?}", e);
+                error!("画像ファイルの読み込みに失敗しました: {:?}", e);
                 AppError::InternalServerError
             })?;
-
-        match output.status.success() {
-            true => Ok(Bytes::from(output.stdout)),
-            false => {
-                error!(
-                    "画像リサイズのコマンド実行に失敗しました: {:?}",
-                    String::from_utf8_lossy(&output.stderr)
-                );
-                Err(AppError::InternalServerError)
+        
+        let resized_image = base_image.resize_exact(width_u32, height_u32, FilterType::Lanczos3);
+         let mut output_bytes: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+        // Write the resized image to the vector in PNG format
+        resized_image.write_to(&mut output_bytes, ImageOutputFormat::Png).map_err(
+            |e| {
+                error!("画像ファイルの書き込みに失敗しました: {:?}", e);
+                AppError::InternalServerError
             }
-        }
+        )?;
+        
+
+
+            
+
+        // match output.status.success() {
+        //     true => Ok(Bytes::from(output.stdout)),
+        //     false => {
+        //         error!(
+        //             "画像リサイズのコマンド実行に失敗しました: {:?}",
+        //             String::from_utf8_lossy(&output.stderr)
+        //         );
+        //         Err(AppError::InternalServerError)
+        //     }
+        // }
+
+        Ok(Bytes::from(output_bytes.into_inner()))
     }
 
     pub async fn validate_session(&self, session_token: &str) -> Result<bool, AppError> {
