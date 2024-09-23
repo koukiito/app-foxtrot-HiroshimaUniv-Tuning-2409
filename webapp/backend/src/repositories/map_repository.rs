@@ -53,7 +53,7 @@ impl MapRepository for MapRepositoryImpl {
 
     async fn get_all_edges(&self, area_id: Option<i32>) -> Result<Vec<Edge>, sqlx::Error> {
         let where_clause = match area_id {
-            Some(_) => "JOIN nodes n ON e.node_a_id = n.id WHERE n.area_id = ?",
+            Some(_) => "WHERE e.node_a_area_id = ?",
             None => "",
         };
 
