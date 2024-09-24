@@ -1,7 +1,6 @@
 use sqlx::FromRow;
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap, HashSet};
-
 use std::io;
 
 #[derive(FromRow, Clone, Debug)]
@@ -18,7 +17,7 @@ pub struct Edge {
     pub weight: i32,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Graph {
     pub nodes: HashMap<i32, Node>,
     pub edges: HashMap<i32, Vec<Edge>>,
@@ -71,8 +70,43 @@ impl Graph {
             .push(reverse_edge);
     }
 
+    pub fn update_edge(&mut self, node_a_id: i32, node_b_id: i32, new_weight: i32) {
+        let mut edge_exists = false;
+
+        // node_a_idからnode_b_idへのエッジを探して更新
+        if let Some(edges) = self.edges.get_mut(&node_a_id) {
+            for edge in edges.iter_mut() {
+                if edge.node_b_id == node_b_id {
+                    edge.weight = new_weight;
+                    edge_exists = true;
+                    break;
+                }
+            }
+        }
+
+        // node_b_idからnode_a_idへのエッジを探して更新
+        if let Some(edges) = self.edges.get_mut(&node_b_id) {
+            for edge in edges.iter_mut() {
+                if edge.node_a_id == node_a_id {
+                    edge.weight = new_weight;
+                    edge_exists = true;
+                    break;
+                }
+            }
+        }
+
+        // エッジが存在しなかった場合、新しいエッジを追加
+        if !edge_exists {
+            let new_edge = Edge {
+                node_a_id,
+                node_b_id,
+                weight: new_weight,
+            };
+            self.add_edge(new_edge);
+        }
+    }
+
     pub fn shortest_path(&self, from_node_id: i32, to_node_id: i32) -> i32 {
-        // dijkstra法
         let mut dist: HashMap<i32, i32> = self.nodes.keys().map(|&k| (k, i32::MAX)).collect();
         let mut heap = BinaryHeap::new();
 
@@ -106,7 +140,7 @@ impl Graph {
             }
         }
 
-        i32::MAX // パスが見つからない場合
+        i32::MAX
     }
 
     pub fn nearest_node(
@@ -114,7 +148,6 @@ impl Graph {
         from_node_id: i32,
         to_node_ids: HashSet<i32>,
     ) -> Result<i32, io::Error> {
-        // dijkstra法
         let mut dist: HashMap<i32, i32> = self.nodes.keys().map(|&k| (k, i32::MAX)).collect();
         let mut heap = BinaryHeap::new();
 

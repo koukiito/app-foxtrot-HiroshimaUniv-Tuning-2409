@@ -46,6 +46,7 @@ async fn main() -> std::io::Result<()> {
         MapRepositoryImpl::new(pool.clone()),
     ));
     let map_service = web::Data::new(MapService::new(MapRepositoryImpl::new(pool.clone())));
+    let graph_cache = web::Data::new(models::graph_cache::GraphCache::new()); // 追加
 
     HttpServer::new(move || {
         let mut cors = Cors::default();
@@ -65,6 +66,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(auth_service.clone())
             .app_data(order_service.clone())
             .app_data(map_service.clone())
+            .app_data(graph_cache.clone()) // 追加
             .wrap(cors)
             .service(
                 web::scope("/api")
