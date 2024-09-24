@@ -181,7 +181,6 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
         };
 
         let cache_key = (profile_image_name.clone(), width, height);
-        
         if let Some(cached_image) = self.cache.get(&cache_key).await {
             return Ok(cached_image);
         }
