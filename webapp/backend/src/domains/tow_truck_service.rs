@@ -4,6 +4,7 @@ use super::order_service::OrderRepository;
 use crate::errors::AppError;
 use crate::models::graph::Graph;
 use crate::models::tow_truck::TowTruck;
+use std::collections::HashMap;
 
 pub trait TowTruckRepository {
     async fn get_paginated_tow_trucks(
@@ -100,47 +101,33 @@ impl<
             graph.add_edge(edge);
         }
 
-        // let sorted_tow_trucks_by_distance = {
-        //     let mut tow_trucks_with_distance: Vec<_> = tow_trucks
-        //         .into_iter()
-        //         .map(|truck| {
-        //             let distance = calculate_distance(&graph, truck.node_id, order.node_id);
-        //             (distance, truck)
-        //         })
-        //         .collect();
+        // tow_trucksをHashMapに変換 (node_idをキーとし、IDが小さい方だけを残す)
+        let mut tow_truck_map: HashMap<i32, TowTruck> = HashMap::new();
+        for truck in tow_trucks {
+            tow_truck_map
+                .entry(truck.node_id)
+                .and_modify(|existing_truck| {
+                    if truck.id < existing_truck.id {
+                        *existing_truck = truck.clone();
+                    }
+                })
+                .or_insert(truck);
+        }
 
-        //     tow_trucks_with_distance.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-        //     tow_trucks_with_distance
-        // };
+        let nearest_result =
+            graph.nearest_node(order.node_id, tow_truck_map.keys().cloned().collect());
 
-        //TODO: distance is not nessesary.
-        let shortest_result = graph.shortest_node(order.node_id, tow_trucks.iter().map(|truck| truck.node_id).collect());
-        match shortest_result {
-            Ok((node_id, distance)) => {
-                let tow_truck = tow_trucks.iter().find(|truck| truck.node_id == node_id).unwrap();
-                return Ok(Some(TowTruckDto::from_entity(tow_truck.clone())));
+        match nearest_result {
+            Ok(nearest_node_id) => {
+                if let Some(tow_truck) = tow_truck_map.get(&nearest_node_id) {
+                    return Ok(Some(TowTruckDto::from_entity(tow_truck.clone())));
+                } else {
+                    return Ok(None);
+                }
             }
             Err(_) => {
                 return Ok(None);
             }
-            
         }
-
-
-        // if sorted_tow_trucks_by_distance.is_empty() || sorted_tow_trucks_by_distance[0].0 > 10000000
-        // {
-        //     return Ok(None);
-        // }
-
-        // let sorted_tow_truck_dtos: Vec<TowTruckDto> = sorted_tow_trucks_by_distance
-        //     .into_iter()
-        //     .map(|(_, truck)| TowTruckDto::from_entity(truck))
-        //     .collect();
-
-        // Ok(sorted_tow_truck_dtos.first().cloned())
     }
 }
-
-// fn calculate_distance(graph: &Graph, node_id_1: i32, node_id_2: i32) -> i32 {
-//     graph.shortest_path(node_id_1, node_id_2)
-// }
