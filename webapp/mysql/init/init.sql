@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS dispatchers (
 CREATE TABLE IF NOT EXISTS tow_trucks (
     id INT AUTO_INCREMENT PRIMARY KEY,
     driver_id INT NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'available',
+    status VARCHAR(10) NOT NULL DEFAULT 'available',
     area_id INT NOT NULL
 );
 
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS orders (
     client_id INT NOT NULL,
     dispatcher_id INT,
     tow_truck_id INT,
-    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    status VARCHAR(10) NOT NULL DEFAULT 'pending',
     node_id INT NOT NULL,
     car_value DOUBLE NOT NULL,
     order_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
