@@ -40,7 +40,7 @@ pub trait AuthRepository {
 #[derive(Debug)]
 pub struct AuthService<T: AuthRepository + std::fmt::Debug> {
     repository: T,
-    cache: Cache<(i32, i32, i32), Bytes>,
+    cache: Cache<(String, i32, i32), Bytes>,
 }
 
 impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
@@ -168,10 +168,7 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
         width: i32,
         height: i32,
     ) -> Result<Bytes, AppError> {
-        let cache_key = (user_id, width, height);
-        if let Some(cached_image) = self.cache.get(&cache_key).await {
-            return Ok(cached_image);
-        }
+        
 
         let profile_image_name = match self
             .repository
@@ -182,6 +179,12 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
             Ok(None) => return Err(AppError::NotFound),
             Err(_) => return Err(AppError::NotFound),
         };
+
+        let cache_key = (profile_image_name.clone(), width, height);
+        
+        if let Some(cached_image) = self.cache.get(&cache_key).await {
+            return Ok(cached_image);
+        }
 
         let path: PathBuf =
             Path::new(&format!("images/user_profile/{}", profile_image_name)).to_path_buf();
