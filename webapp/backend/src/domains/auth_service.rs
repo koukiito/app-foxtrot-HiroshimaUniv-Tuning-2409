@@ -1,6 +1,8 @@
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::result;
+use moka::future::Cache;
 
 use actix_web::web::Bytes;
 use log::error;
@@ -38,11 +40,15 @@ pub trait AuthRepository {
 #[derive(Debug)]
 pub struct AuthService<T: AuthRepository + std::fmt::Debug> {
     repository: T,
+    cache: Cache<(i32, i32, i32), Bytes>,
 }
 
 impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
     pub fn new(repository: T) -> Self {
-        AuthService { repository }
+         let cache = Cache::builder()
+            .max_capacity(1000)
+            .build();
+        AuthService { repository, cache }
     }
 
     pub async fn register_user(
@@ -162,6 +168,11 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
         width: i32,
         height: i32,
     ) -> Result<Bytes, AppError> {
+        let cache_key = (user_id, width, height);
+        if let Some(cached_image) = self.cache.get(&cache_key).await {
+            return Ok(cached_image);
+        }
+
         let profile_image_name = match self
             .repository
             .find_profile_image_name_by_user_id(user_id)
@@ -193,8 +204,12 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
                 AppError::InternalServerError
             }
         )?;
-        
-        Ok(Bytes::from(output_bytes.into_inner()))
+
+        let result_bytes = Bytes::from(output_bytes.into_inner());
+        let result_bytes_clone = result_bytes.clone();
+
+        self.cache.insert(cache_key, result_bytes_clone).await;
+        Ok(result_bytes)
     }
 
     pub async fn validate_session(&self, session_token: &str) -> Result<bool, AppError> {
