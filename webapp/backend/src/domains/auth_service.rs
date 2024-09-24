@@ -175,27 +175,8 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
         let path: PathBuf =
             Path::new(&format!("images/user_profile/{}", profile_image_name)).to_path_buf();
 
-        // let output = Command::new("convert")
-        //     .arg(&path)
-        //     .arg("-resize")
-        //     .arg(format!("{}x{}!", width, height))
-        //     .arg("png:-")
-        //     .output()
-        //     .map_err(|e| {
-        //         error!("画像リサイズのコマンド実行に失敗しました: {:?}", e);
-        //         AppError::InternalServerError
-        //     })?;
-
         let width_u32 = width as u32;
         let height_u32 = height as u32;
-
-        // let output = image::open(&path)
-        //     .map_err(|e| {
-        //         error!("画像ファイルの読み込みに失敗しました: {:?}", e);
-        //         AppError::InternalServerError
-        //     })?
-        //     .resize(width_u32, height_u32, FilterType::Lanczos3)
-        //     .into_bytes();
 
         let base_image = image::open(&path)
             .map_err(|e| {
@@ -213,21 +194,6 @@ impl<T: AuthRepository + std::fmt::Debug> AuthService<T> {
             }
         )?;
         
-
-
-            
-
-        // match output.status.success() {
-        //     true => Ok(Bytes::from(output.stdout)),
-        //     false => {
-        //         error!(
-        //             "画像リサイズのコマンド実行に失敗しました: {:?}",
-        //             String::from_utf8_lossy(&output.stderr)
-        //         );
-        //         Err(AppError::InternalServerError)
-        //     }
-        // }
-
         Ok(Bytes::from(output_bytes.into_inner()))
     }
 
